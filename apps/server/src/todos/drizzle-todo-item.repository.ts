@@ -5,9 +5,20 @@ import { TodoItemPersistenceMapper, type TodoItemPersistence } from "@multitodo/
 import { todoItems, type TodoItemRow } from "../database/schema.js";
 import type * as schema from "../database/schema.js";
 
+/**
+ * Implementação de {@link TodoItemRepository} usando Drizzle ORM + SQLite.
+ *
+ * Converte entre {@link TodoItem} (domínio) e linhas da tabela `todo_items`
+ * via {@link TodoItemPersistenceMapper}. Toda lógica de negócio permanece
+ * no domínio — este repositório é exclusivamente de I/O.
+ */
 export class DrizzleTodoItemRepository implements TodoItemRepository {
     constructor(private readonly db: BetterSQLite3Database<typeof schema>) { }
 
+    /**
+     * Insere ou atualiza um item (upsert por `reference_id`).
+     * Em conflito, atualiza título, corpo, categoria, status e timestamp.
+     */
     async save(todoItem: TodoItem): Promise<void> {
         const persistence = TodoItemPersistenceMapper.toPersistence(todoItem);
         const now = new Date();
@@ -35,6 +46,7 @@ export class DrizzleTodoItemRepository implements TodoItemRepository {
             });
     }
 
+    /** @returns O item encontrado, ou `null` se não existir. */
     async findById(id: TodoItemId): Promise<TodoItem | null> {
         const row = await this.db.query.todoItems.findFirst({
             where: eq(todoItems.referenceId, id.toString()),
@@ -45,17 +57,20 @@ export class DrizzleTodoItemRepository implements TodoItemRepository {
         return TodoItemPersistenceMapper.toDomain(this.toPersistence(row));
     }
 
+    /** Retorna todos os itens sem filtro ou ordenação. */
     async findAll(): Promise<TodoItem[]> {
         const rows = await this.db.query.todoItems.findMany();
         return rows.map(row => TodoItemPersistenceMapper.toDomain(this.toPersistence(row)));
     }
 
+    /** Remove o item permanentemente. Não lança erro se o id não existir. */
     async deleteById(id: TodoItemId): Promise<void> {
         await this.db
             .delete(todoItems)
             .where(eq(todoItems.referenceId, id.toString()));
     }
 
+    /** Adapta uma linha do Drizzle para o contrato {@link TodoItemPersistence}. */
     private toPersistence(row: TodoItemRow): TodoItemPersistence {
         return {
             id: {
