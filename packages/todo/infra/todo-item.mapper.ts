@@ -4,7 +4,23 @@ import type { PersistableTodoItem, TodoItemPersistence } from "./todo-item-persi
 const TODO_ITEM_CATEGORIES = ["work", "personal", "other"] as const;
 const TODO_ITEM_STATUSES = ["pending", "completed", "archived"] as const;
 
+/**
+ * Converte TodoItems entre a representação de domínio e a de persistência.
+ *
+ * Responsabilidades:
+ * - `toDomain`: hidrata um {@link TodoItem} a partir de uma linha do banco.
+ * - `toPersistence`: serializa um {@link TodoItem} para gravação no banco.
+ *
+ * Garante que valores inválidos de `category` ou `status` vindos do banco
+ * causem erro explícito em vez de corromper o estado do domínio.
+ */
 export class TodoItemPersistenceMapper {
+    /**
+     * Converte uma linha do banco em um {@link TodoItem} de domínio.
+     *
+     * @param row - Linha lida do banco via {@link TodoItemPersistence}.
+     * @throws {Error} Se `category` ou `status` contiverem valor desconhecido.
+     */
     static toDomain(row: TodoItemPersistence): TodoItem {
         return TodoItem.restore({
             id: TodoItemId.create(row.id.referenceId),
@@ -15,6 +31,12 @@ export class TodoItemPersistenceMapper {
         });
     }
 
+    /**
+     * Converte um {@link TodoItem} em um objeto pronto para insert/update.
+     *
+     * @param todoItem - Agregado a serializar.
+     * @param databaseId - Chave primária do banco. Omitido em novos registros.
+     */
     static toPersistence(todoItem: TodoItem, databaseId?: number): PersistableTodoItem {
         const snapshot = todoItem.toSnapshot();
 
@@ -30,6 +52,9 @@ export class TodoItemPersistenceMapper {
         };
     }
 
+    /**
+     * @throws {Error} Se o valor não pertencer ao enum de categorias.
+     */
     private static toCategory(category: string): TodoItemCategory {
         if (TODO_ITEM_CATEGORIES.includes(category as TodoItemCategory)) {
             return category as TodoItemCategory;
@@ -38,6 +63,9 @@ export class TodoItemPersistenceMapper {
         throw new Error(`Invalid todo item category: ${category}`);
     }
 
+    /**
+     * @throws {Error} Se o valor não pertencer ao enum de statuses.
+     */
     private static toStatus(status: string): TodoItemStatus {
         if (TODO_ITEM_STATUSES.includes(status as TodoItemStatus)) {
             return status as TodoItemStatus;
