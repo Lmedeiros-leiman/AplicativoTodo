@@ -1,4 +1,6 @@
 
+import { TodoItem, type CreateTodoItemProps } from "../../domain/entities/todo.entity.js";
+import type { TodoItemRepository } from "../../domain/repository/todo-item-repository.js";
 
 export class CreateTodoItemUseCase {
     constructor(
