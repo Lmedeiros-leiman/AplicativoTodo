@@ -1,10 +1,20 @@
 import { TodoItem, TodoItemId, type TodoItemRepository } from "@multitodo/todo-domain";
 
+/**
+ * Move um TodoItem para o status `archived`.
+ *
+ * Itens arquivados não aparecem no fluxo principal mas permanecem
+ * persistidos e podem ser restaurados via {@link RestoreTodoUseCase}.
+ */
 export class ArchiveTodoUseCase {
     constructor(
         private readonly todoRepository: TodoItemRepository,
     ) { }
 
+    /**
+     * @param id - Identificador do item a arquivar.
+     * @throws {Error} Se o item não for encontrado.
+     */
     async execute(id: TodoItemId): Promise<void> {
         const todoItem = await this.todoRepository.findById(id);
 
