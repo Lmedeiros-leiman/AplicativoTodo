@@ -7,6 +7,16 @@ import {
 import { appRouter, type AppRouter } from "./app.router.js";
 import { appContext } from "./context.js";
 
+/**
+ * Bootstrap do servidor.
+ *
+ * - Carrega variáveis de ambiente via dotenv.
+ * - Registra o plugin tRPC no prefixo `/trpc`.
+ * - Expõe `GET /health` para health-checks.
+ * - Escuta na porta `PORT` (default: 3000) em todas as interfaces.
+ * - Fecha o banco SQLite ao receber SIGTERM ou SIGINT.
+ */
+
 const fastify = Fastify({ logger: true });
 
 await fastify.register(fastifyTRPCPlugin, {
