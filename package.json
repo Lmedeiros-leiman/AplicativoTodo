@@ -1,0 +1,21 @@
+{
+  "name": "multitodo-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "author": "Leonardo Medeiros Leiman (sem ia)",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "tsc -b",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "type": "commonjs",
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}
