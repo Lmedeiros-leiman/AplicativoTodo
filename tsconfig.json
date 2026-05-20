@@ -2,8 +2,9 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
-    {
-      "path": "./packages/todo_library"
-    }
+    { "path": "./packages/todo/domain" },
+    { "path": "./packages/todo/application" },
+    { "path": "./packages/todo/infra" },
+    { "path": "./packages/todo/contracts" }
   ]
 }
