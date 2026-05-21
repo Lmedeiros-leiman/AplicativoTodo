@@ -11,12 +11,13 @@
     "packages/todo/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "concurrently -n server,web -c cyan,magenta \"npm run dev -w @multitodo/server\" \"npm run dev -w @multitodo/web\"",
     "build": "tsc -b",
     "typecheck": "tsc -b --noEmit"
   },
   "type": "commonjs",
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "typescript": "^6.0.3"
   }
 }

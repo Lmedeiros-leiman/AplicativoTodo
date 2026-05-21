@@ -39,14 +39,29 @@ try {
     process.exit(1);
 }
 
-process.on("SIGTERM", async () => {
-    await fastify.close();
-    appContext.close();
-    process.exit(0);
+let isShuttingDown = false;
+
+async function shutdown(signal: NodeJS.Signals) {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+
+    fastify.log.info({ signal }, "Encerrando servidor...");
+
+    try {
+        await fastify.close();
+        appContext.close();
+        fastify.log.info("Servidor encerrado.");
+        process.exit(0);
+    } catch (err) {
+        fastify.log.error(err, "Falha ao encerrar servidor.");
+        process.exit(1);
+    }
+}
+
+process.on("SIGTERM", () => {
+    void shutdown("SIGTERM");
 });
 
-process.on("SIGINT", async () => {
-    await fastify.close();
-    appContext.close();
-    process.exit(0);
+process.on("SIGINT", () => {
+    void shutdown("SIGINT");
 });

@@ -24,16 +24,20 @@ export const todosRouter = router({
             return item.toSnapshot();
         }),
 
-    /** Cria um novo item. `category` é opcional (padrão: `personal`). */
+    /** Cria um novo item e retorna o snapshot persistido. `category` é opcional (padrão: `personal`). */
     create: publicProcedure
         .input(createTodoSchema)
         .mutation(async ({ ctx, input }) => {
+            const id = TodoItemId.create(input.id);
             await ctx.todos.create.execute({
-                id: TodoItemId.create(input.id),
+                id,
                 title: input.title,
                 body: input.body,
                 ...(input.category !== undefined && { category: input.category }),
             });
+            const item = await ctx.todos.repository.findById(id);
+            if (!item) throw new Error("Todo item not found after creation");
+            return item.toSnapshot();
         }),
 
     /** Altera o título de um item. */
