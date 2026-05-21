@@ -18,7 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { trpc } from "./trpc";
-import { idbGetAll, idbAdd, idbUpdateStatus, idbDelete } from "./db";
+import { idbGetAll, idbAdd, idbUpsertByReferenceId, idbUpdateStatus, idbDelete } from "./db";
 import "./App.css";
 
 type Filter = "all" | "pending" | "completed" | "archived";
@@ -76,6 +76,15 @@ function getErrorMessage(error: unknown) {
     return error instanceof Error ? error.message : "Erro desconhecido";
 }
 
+function hasTodoConflict(local: TodoDto, remote: TodoDto) {
+    return (
+        local.title !== remote.title ||
+        local.body !== remote.body ||
+        local.category !== remote.category ||
+        local.status !== remote.status
+    );
+}
+
 export function App() {
     const [filter, setFilter] = useState<Filter>("all");
     const [showForm, setShowForm] = useState(false);
@@ -118,23 +127,36 @@ export function App() {
         setServerSynced(true);
 
         setTodos((prev) => {
-            const knownIds = new Set(prev.map((todo) => todo.id));
-            const incoming = serverTodos.filter((todo) => !knownIds.has(todo.id));
-            if (incoming.length === 0) return prev;
+            const serverSnapshots = serverTodos.map(toDto);
+            const remoteById = new Map(serverSnapshots.map((todo) => [todo.id, todo]));
+            let didChange = false;
 
-            incoming.forEach((todo) => {
-                void idbAdd({
+            const reconciled = prev.map((localTodo) => {
+                const remoteTodo = remoteById.get(localTodo.id);
+                if (!remoteTodo) return localTodo;
+                remoteById.delete(localTodo.id);
+
+                if (!hasTodoConflict(localTodo, remoteTodo)) return localTodo;
+                didChange = true;
+                return remoteTodo;
+            });
+
+            const incoming = [...remoteById.values()];
+            if (incoming.length > 0) didChange = true;
+
+            serverSnapshots.forEach((todo) => {
+                void idbUpsertByReferenceId({
                     referenceId: todo.id,
                     title: todo.title,
                     body: todo.body,
                     category: todo.category,
                     status: todo.status,
                 }).catch((error: unknown) => {
-                    setLocalError(`Falha ao salvar item remoto localmente: ${getErrorMessage(error)}`);
+                    setLocalError(`Falha ao reconciliar item remoto localmente: ${getErrorMessage(error)}`);
                 });
             });
 
-            return [...prev, ...incoming.map(toDto)];
+            return didChange ? [...reconciled, ...incoming] : prev;
         });
     }, [idbLoaded, serverTodos, serverSynced]);
 

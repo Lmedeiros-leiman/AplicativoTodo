@@ -1,66 +1,67 @@
 import { TodoItemId } from "../value-objects/todo-item-id.js";
 
-/** Ciclo de vida de um item: pendente → concluído → arquivado. */
+/** Ciclo de vida de um item: pendente -> concluido -> arquivado. */
 export type TodoItemStatus = "pending" | "completed" | "archived";
 
-/** Classificação do item para organização. */
+/** Classificacao do item para organizacao. */
 export type TodoItemCategory = "work" | "personal" | "other";
+
+/** Dados de negocio compartilhados pelo estado interno e pelo snapshot publico. */
+export type TodoItemData = {
+    title: string;
+    body: string;
+    userName: string;
+    test: string;
+    category: TodoItemCategory;
+    status: TodoItemStatus;
+};
 
 /** Estado interno completo do agregado. Nunca exposto diretamente. */
 export type TodoItemProps = {
     id: TodoItemId;
-    title: string;
-    body: string;
-    category: TodoItemCategory;
-    status: TodoItemStatus;
-};
+} & TodoItemData;
 
 /**
  * Props aceitas por {@link TodoItem.create}.
  *
- * `category` e `status` são opcionais — o domínio aplica os defaults
+ * `category` e `status` sao opcionais: o dominio aplica os defaults
  * (`personal` e `pending`, respectivamente).
  */
 export type CreateTodoItemProps = {
     id: TodoItemId;
-    title: string;
-    body: string;
-    category?: TodoItemCategory;
-    status?: TodoItemStatus;
-};
+    test: string;
+} & Pick<TodoItemData, "title" | "body" | "userName">
+    & Partial<Pick<TodoItemData, "category" | "status">>;
 
 /**
- * Representação somente-leitura do estado do item.
- * Usada para cruzar fronteiras de camada (repositório, controller, tRPC).
+ * Representacao somente-leitura do estado do item.
+ * Usada para cruzar fronteiras de camada (repositorio, controller, tRPC).
  */
 export type TodoItemSnapshot = {
     id: string;
-    title: string;
-    body: string;
-    category: TodoItemCategory;
-    status: TodoItemStatus;
-};
+} & TodoItemData;
 
 /**
- * Agregado raiz do domínio de tarefas.
+ * Agregado raiz do dominio de tarefas.
  *
- * Toda mutação passa pelos factory methods `create` ou `restore` —
- * o construtor privado impede instanciação arbitrária.
+ * Toda mutacao passa pelos factory methods `create` ou `restore`.
+ * O construtor privado impede instanciacao arbitraria.
  */
 export class TodoItem {
     private constructor(private props: TodoItemProps) { }
 
     /**
-     * Cria um novo item aplicando regras de negócio.
+     * Cria um novo item aplicando regras de negocio.
      *
-     * - Faz trim em `title` e `body`.
+     * - Faz trim em `title`, `body` e `userName`.
      * - Aplica defaults: `category = "personal"`, `status = "pending"`.
      *
-     * @throws {Error} Se `title` ou `body` ficarem vazios após trim.
+     * @throws {Error} Se `title`, `body` ou `userName` ficarem vazios apos trim.
      */
     static create(props: CreateTodoItemProps): TodoItem {
         const title = props.title.trim();
         const body = props.body.trim();
+        const userName = props.userName.trim();
 
         if (!title) {
             throw new Error("Title must not be empty");
@@ -70,34 +71,42 @@ export class TodoItem {
             throw new Error("Body must not be empty");
         }
 
+        if (!userName) {
+            throw new Error("User name must not be empty");
+        }
+
         return new TodoItem({
             id: props.id,
+            test: props.test,
             title,
             body,
+            userName,
             category: props.category ?? "personal",
-            status: props.status ?? "pending"
-        });
+            status: props.status ?? "pending",
+        } satisfies TodoItemProps);
     }
 
     /**
-     * Reconstrói um item a partir de dados persistidos, sem validação.
-     * Usado exclusivamente pelo repositório ao hidratar do banco.
+     * Reconstroi um item a partir de dados persistidos, sem validacao.
+     * Usado exclusivamente pelo repositorio ao hidratar do banco.
      */
     static restore(props: TodoItemProps): TodoItem {
         return new TodoItem({ ...props });
     }
 
     /**
-     * Retorna uma cópia somente-leitura do estado atual.
-     * É a única forma de ler os dados internos do agregado.
+     * Retorna uma copia somente-leitura do estado atual.
+     * E a unica forma de ler os dados internos do agregado.
      */
     toSnapshot(): Readonly<TodoItemSnapshot> {
         return {
             id: this.props.id.toString(),
             title: this.props.title,
             body: this.props.body,
+            userName: this.props.userName,
+            test: this.props.test,
             category: this.props.category,
-            status: this.props.status
-        };
+            status: this.props.status,
+        } satisfies TodoItemSnapshot;
     }
 }

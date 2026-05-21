@@ -13,10 +13,11 @@
   "scripts": {
     "dev": "concurrently -n server,web -c cyan,magenta \"npm run dev -w @multitodo/server\" \"npm run dev -w @multitodo/web\"",
     "build": "tsc -b",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "type": "commonjs",
   "devDependencies": {
+    "@types/node": "^25.9.1",
     "concurrently": "^9.1.2",
     "typescript": "^6.0.3"
   }

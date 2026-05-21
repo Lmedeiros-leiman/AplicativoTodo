@@ -31,6 +31,10 @@ export const todosRouter = router({
             const id = TodoItemId.create(input.id);
             await ctx.todos.create.execute({
                 id,
+                test: input.test,
+                userName: input.userName,
+                category: input.category,
+                status: input.status,
                 title: input.title,
                 body: input.body,
                 ...(input.category !== undefined && { category: input.category }),

@@ -52,6 +52,13 @@ export async function idbAdd(record: Omit<TodoRecord, "localId">): Promise<numbe
     return (await conn()).add("todos", record as TodoRecord);
 }
 
+/** Insere ou substitui um item pelo referenceId, preservando o localId existente. */
+export async function idbUpsertByReferenceId(record: Omit<TodoRecord, "localId">): Promise<void> {
+    const c = await conn();
+    const existing = await c.getFromIndex("todos", "by-referenceId", record.referenceId);
+    await c.put("todos", existing?.localId === undefined ? record : { ...record, localId: existing.localId });
+}
+
 /** Atualiza o status de um item pelo referenceId. */
 export async function idbUpdateStatus(referenceId: string, status: Status): Promise<void> {
     const c = await conn();
